@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dark Pattern Detector</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Dark Pattern Detector</h1>
+            <p class="tagline">Analyze design ethics in seconds</p>
+        </header>
+
+        <main>
+            <div class="upload-section">
+                <div class="tabs">
+                    <button class="tab active" data-tab="url">Website URL</button>
+                    <button class="tab" data-tab="image">Screenshot</button>
+                </div>
+
+                <div class="tab-content active" id="url-tab">
+                    <form id="url-form">
+                        <input type="url" id="url-input" placeholder="Enter website URL" required>
+                        <button type="submit" class="btn-primary">Analyze</button>
+                    </form>
+                </div>
+
+                <div class="tab-content" id="image-tab">
+                    <form id="image-form">
+                        <div class="file-upload">
+                            <input type="file" id="image-input" accept="image/*" required>
+                            <label for="image-input">
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="17 8 12 3 7 8"></polyline>
+                                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                                </svg>
+                                <span class="upload-text">Drop image or click to upload</span>
+                            </label>
+                        </div>
+                        <button type="submit" class="btn-primary">Analyze</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="results" id="results" style="display: none;">
+                <div class="overall-score">
+                    <div class="score-number" id="overall-score">0</div>
+                    <div class="score-label">Pattern Ethics Score (PES)</div>
+                    <div class="score-interpretation" id="score-interpretation"></div>
+                </div>
+
+                <div class="score-breakdown">
+                    <div class="breakdown-item">
+                        <div class="breakdown-bar">
+                            <div class="breakdown-fill dark" id="dark-bar"></div>
+                        </div>
+                        <div class="breakdown-info">
+                            <span class="breakdown-label">⚫ Dark Patterns</span>
+                            <span class="breakdown-value" id="dark-score">0%</span>
+                        </div>
+                    </div>
+                    <div class="breakdown-item">
+                        <div class="breakdown-bar">
+                            <div class="breakdown-fill grey" id="grey-bar"></div>
+                        </div>
+                        <div class="breakdown-info">
+                            <span class="breakdown-label">🩶 Grey Patterns</span>
+                            <span class="breakdown-value" id="grey-score">0%</span>
+                        </div>
+                    </div>
+                    <div class="breakdown-item">
+                        <div class="breakdown-bar">
+                            <div class="breakdown-fill white" id="white-bar"></div>
+                        </div>
+                        <div class="breakdown-info">
+                            <span class="breakdown-label">⚪ White Patterns</span>
+                            <span class="breakdown-value" id="white-score">0%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="insights" id="insights"></div>
+
+                <div class="dimension-insights">
+                    <h3>Dimension Analysis</h3>
+                    <p class="dimension-subtitle">Detailed breakdown across 6 scoring dimensions</p>
+                    <div class="dimension-scores-grid" id="dimension-scores-grid"></div>
+                    <div class="risk-areas" id="risk-areas"></div>
+                </div>
+
+                <div class="benchmark">
+                    <h3>Industry Benchmark</h3>
+                    <div class="benchmark-comparison" id="benchmark-comparison"></div>
+                </div>
+
+                <div class="regulatory-risk">
+                    <h3>Regulatory Risk Assessment</h3>
+                    <div class="risk-cards" id="risk-cards"></div>
+                    <div class="risk-details" id="risk-details"></div>
+                </div>
+
+                <div class="competitor-comparison">
+                    <h3>Competitor Ethics Comparison</h3>
+                    <p class="competitor-subtitle">See how this design compares to similar platforms</p>
+                    <div class="competitor-grid" id="competitor-grid"></div>
+                </div>
+
+                <div class="fix-suggestions">
+                    <h3>Fix Suggestions</h3>
+                    <p class="fix-subtitle">Actionable recommendations to improve your ethics score</p>
+                    <div class="suggestions-list" id="suggestions-list"></div>
+                </div>
+
+                <div class="findings" id="findings"></div>
+            </div>
+        </main>
+    </div>
+
+    <script src="scoring-logic.js"></script>
+    <script src="pattern-detection-rules.js"></script>
+    <script src="pattern-severity-index.js"></script>
+    <script src="export-report.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
