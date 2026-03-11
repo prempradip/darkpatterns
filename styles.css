@@ -34,6 +34,28 @@ header h1 {
     color: #666;
 }
 
+.demo-warning {
+    margin-top: 20px;
+    padding: 12px 20px;
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    border-radius: 8px;
+    color: #92400e;
+    font-size: 0.9rem;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.demo-warning strong {
+    color: #f59e0b;
+}
+
+.demo-warning a {
+    color: #ea580c;
+    text-decoration: underline;
+}
+
 main {
     background: white;
     border-radius: 12px;

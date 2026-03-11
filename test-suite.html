@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dark Pattern Detector - Test Suite</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        h1 {
+            color: #1a1a1a;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-case {
+            padding: 15px;
+            margin: 10px 0;
+            border-left: 4px solid #e0e0e0;
+            background: #fafafa;
+        }
+        .test-case.pass {
+            border-left-color: #10b981;
+            background: #f0fdf4;
+        }
+        .test-case.fail {
+            border-left-color: #ef4444;
+            background: #fef2f2;
+        }
+        .test-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .test-result {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        .test-details {
+            font-size: 0.85rem;
+            color: #999;
+            margin-top: 8px;
+            font-family: monospace;
+        }
+        button {
+            background: #1a1a1a;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #333;
+        }
+        .summary {
+            display: flex;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .summary-card {
+            flex: 1;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .summary-card.total {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        .summary-card.passed {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .summary-card.failed {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .summary-number {
+            font-size: 2.5rem;
+            font-weight: 600;
+        }
+        .summary-label {
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Dark Pattern Detector - Test Suite</h1>
+    
+    <div class="test-section">
+        <h2>Test Controls</h2>
+        <button onclick="runAllTests()">Run All Tests</button>
+        <button onclick="runScoringTests()">Test Scoring Logic</button>
+        <button onclick="runDetectionTests()">Test Pattern Detection</button>
+        <button onclick="runPSITests()">Test PSI Calculation</button>
+        <button onclick="clearResults()">Clear Results</button>
+    </div>
+
+    <div class="summary" id="summary" style="display: none;">
+        <div class="summary-card total">
+            <div class="summary-number" id="total-tests">0</div>
+            <div class="summary-label">Total Tests</div>
+        </div>
+        <div class="summary-card passed">
+            <div class="summary-number" id="passed-tests">0</div>
+            <div class="summary-label">Passed</div>
+        </div>
+        <div class="summary-card failed">
+            <div class="summary-number" id="failed-tests">0</div>
+            <div class="summary-label">Failed</div>
+        </div>
+    </div>
+
+    <div id="test-results"></div>
+
+    <script src="scoring-logic.js"></script>
+    <script src="pattern-detection-rules.js"></script>
+    <script src="pattern-severity-index.js"></script>
+
+    <script>
+        let testResults = [];
+
+        function addTestResult(section, title, passed, details) {
+            testResults.push({ section, title, passed, details });
+        }
+
+        function displayResults() {
+            const resultsDiv = document.getElementById('test-results');
+            const summaryDiv = document.getElementById('summary');
+            
+            // Group by section
+            const sections = {};
+            testResults.forEach(result => {
+                if (!sections[result.section]) {
+                    sections[result.section] = [];
+                }
+                sections[result.section].push(result);
+            });
+
+            // Display results
+            let html = '';
+            Object.keys(sections).forEach(section => {
+                html += `<div class="test-section"><h2>${section}</h2>`;
+                sections[section].forEach(result => {
+                    html += `
+                        <div class="test-case ${result.passed ? 'pass' : 'fail'}">
+                            <div class="test-title">
+                                ${result.passed ? '✓' : '✗'} ${result.title}
+                            </div>
+                            <div class="test-result">${result.passed ? 'PASSED' : 'FAILED'}</div>
+                            ${result.details ? `<div class="test-details">${result.details}</div>` : ''}
+                        </div>
+                    `;
+                });
+                html += '</div>';
+            });
+
+            resultsDiv.innerHTML = html;
+
+            // Update summary
+            const total = testResults.length;
+            const passed = testResults.filter(r => r.passed).length;
+            const failed = total - passed;
+
+            document.getElementById('total-tests').textContent = total;
+            document.getElementById('passed-tests').textContent = passed;
+            document.getElementById('failed-tests').textContent = failed;
+            summaryDiv.style.display = 'flex';
+        }
+
+        function clearResults() {
+            testResults = [];
+            document.getElementById('test-results').innerHTML = '';
+            document.getElementById('summary').style.display = 'none';
+        }
+
+        // Test 1: Scoring Dimensions
+        function testScoringDimensions() {
+            const dimensions = Object.values(SCORING_DIMENSIONS);
+            
+            // Test dimension count
+            addTestResult(
+                'Scoring System',
+                'Should have 6 scoring dimensions',
+                dimensions.length === 6,
+                `Found ${dimensions.length} dimensions`
+            );
+
+            // Test weights sum to 1
+            const totalWeight = dimensions.reduce((sum, dim) => sum + dim.weight, 0);
+            addTestResult(
+                'Scoring System',
+                'Dimension weights should sum to 1.0',
+                Math.abs(totalWeight - 1.0) < 0.001,
+                `Total weight: ${totalWeight.toFixed(3)}`
+            );
+
+            // Test each dimension has required properties
+            dimensions.forEach(dim => {
+                const hasRequired = dim.key && dim.name && dim.description && dim.weight;
+                addTestResult(
+                    'Scoring System',
+                    `Dimension "${dim.name}" has all required properties`,
+                    hasRequired,
+                    `key: ${dim.key}, weight: ${dim.weight}`
+                );
+            });
+        }
+
+        // Test 2: Pattern Definitions
+        function testPatternDefinitions() {
+            const darkPatterns = Object.keys(PATTERN_DEFINITIONS.dark);
+            const greyPatterns = Object.keys(PATTERN_DEFINITIONS.grey);
+            const whitePatterns = Object.keys(PATTERN_DEFINITIONS.white);
+
+            addTestResult(
+                'Pattern Definitions',
+                'Should have dark patterns defined',
+                darkPatterns.length > 0,
+                `Found ${darkPatterns.length} dark patterns`
+            );
+
+            addTestResult(
+                'Pattern Definitions',
+                'Should have grey patterns defined',
+                greyPatterns.length > 0,
+                `Found ${greyPatterns.length} grey patterns`
+            );
+
+            addTestResult(
+                'Pattern Definitions',
+                'Should have white patterns defined',
+                whitePatterns.length > 0,
+                `Found ${whitePatterns.length} white patterns`
+            );
+
+            // Test pattern structure
+            const testPattern = PATTERN_DEFINITIONS.dark.hidden_costs;
+            const hasStructure = testPattern.dimensions && testPattern.description && testPattern.examples;
+            addTestResult(
+                'Pattern Definitions',
+                'Patterns have correct structure (dimensions, description, examples)',
+                hasStructure,
+                `hidden_costs has ${Object.keys(testPattern.dimensions).length} dimension scores`
+            );
+        }
+
+        // Test 3: PES Calculation
+        function testPESCalculation() {
+            // Create test patterns
+            const testPatterns = [
+                { category: 'dark', type: 'hidden_costs' },
+                { category: 'grey', type: 'urgency_messaging' },
+                { category: 'white', type: 'clear_pricing' }
+            ];
+
+            const result = calculatePES(testPatterns);
+
+            addTestResult(
+                'PES Calculation',
+                'Should return overall score between 0-100',
+                result.overallScore >= 0 && result.overallScore <= 100,
+                `Score: ${result.overallScore}`
+            );
+
+            addTestResult(
+                'PES Calculation',
+                'Should return weighted PES',
+                result.weightedPES !== undefined && result.weightedPES >= 0,
+                `Weighted PES: ${result.weightedPES}`
+            );
+
+            addTestResult(
+                'PES Calculation',
+                'Should calculate pattern percentages',
+                result.darkPercentage + result.greyPercentage + result.whitePercentage === 100,
+                `Dark: ${result.darkPercentage}%, Grey: ${result.greyPercentage}%, White: ${result.whitePercentage}%`
+            );
+
+            addTestResult(
+                'PES Calculation',
+                'Should return dimension scores',
+                Object.keys(result.dimensionScores).length === 6,
+                `Found ${Object.keys(result.dimensionScores).length} dimension scores`
+            );
+        }
+
+        // Test 4: Critical Flags
+        function testCriticalFlags() {
+            const criticalPatterns = [
+                { category: 'dark', type: 'hidden_costs' },
+                { category: 'dark', type: 'forced_continuity' }
+            ];
+
+            const result = calculatePES(criticalPatterns);
+
+            addTestResult(
+                'Critical Flags',
+                'Should detect critical flags',
+                result.hasCriticalFlags === true,
+                `Detected ${result.criticalFlags.length} critical flags`
+            );
+
+            addTestResult(
+                'Critical Flags',
+                'Should override interpretation for critical patterns',
+                result.interpretation.isCritical === true,
+                `Interpretation: ${result.interpretation.label}`
+            );
+
+            // Test non-critical patterns
+            const nonCriticalPatterns = [
+                { category: 'white', type: 'clear_pricing' }
+            ];
+            const result2 = calculatePES(nonCriticalPatterns);
+
+            addTestResult(
+                'Critical Flags',
+                'Should not flag non-critical patterns',
+                result2.hasCriticalFlags === false,
+                'No critical flags detected'
+            );
+        }
+
+        // Test 5: Score Interpretation
+        function testScoreInterpretation() {
+            const testScores = [
+                { score: 95, expected: 'white' },
+                { score: 70, expected: 'light_grey' },
+                { score: 50, expected: 'grey' },
+                { score: 30, expected: 'dark_grey' },
+                { score: 10, expected: 'dark' }
+            ];
+
+            testScores.forEach(test => {
+                const interpretation = SCORE_INTERPRETATION.getInterpretation(test.score);
+                addTestResult(
+                    'Score Interpretation',
+                    `Score ${test.score} should be categorized as ${test.expected}`,
+                    interpretation.category === test.expected,
+                    `Got: ${interpretation.category} (${interpretation.label})`
+                );
+            });
+        }
+
+        // Test 6: PSI Calculation
+        function testPSICalculation() {
+            const psiResult = calculatePSI(60, 'high', 'high');
+
+            addTestResult(
+                'PSI Calculation',
+                'Should calculate PSI value',
+                psiResult.psi > 0,
+                `PSI: ${psiResult.psi}`
+            );
+
+            addTestResult(
+                'PSI Calculation',
+                'Should normalize PSI to 0-100',
+                psiResult.normalizedPSI >= 0 && psiResult.normalizedPSI <= 100,
+                `Normalized PSI: ${psiResult.normalizedPSI}`
+            );
+
+            addTestResult(
+                'PSI Calculation',
+                'Should determine severity level',
+                ['critical', 'high', 'medium', 'low', 'minimal'].includes(psiResult.severity),
+                `Severity: ${psiResult.severity}`
+            );
+
+            addTestResult(
+                'PSI Calculation',
+                'Should provide priority recommendation',
+                psiResult.priority.startsWith('P'),
+                `Priority: ${psiResult.priority}`
+            );
+        }
+
+        // Test 7: Detection Rules
+        function testDetectionRules() {
+            const allRules = getAllDetectionRules();
+
+            addTestResult(
+                'Detection Rules',
+                'Should have detection rules defined',
+                allRules.length > 0,
+                `Found ${allRules.length} detection rules`
+            );
+
+            // Test rule structure
+            const testRule = allRules[0];
+            const hasStructure = testRule.id && testRule.pattern && testRule.category && testRule.risk;
+            addTestResult(
+                'Detection Rules',
+                'Rules have correct structure',
+                hasStructure,
+                `Rule: ${testRule.id} -> ${testRule.pattern}`
+            );
+
+            // Test detection
+            const detection = detectPatternsFromRules('test content', 'url');
+            addTestResult(
+                'Detection Rules',
+                'Detection should return patterns and log',
+                detection.patterns && detection.log,
+                `Detected ${detection.patterns.length} patterns`
+            );
+        }
+
+        // Test 8: Edge Cases
+        function testEdgeCases() {
+            // Empty patterns
+            const emptyResult = calculatePES([]);
+            addTestResult(
+                'Edge Cases',
+                'Should handle empty pattern array',
+                emptyResult.overallScore !== undefined,
+                `Score: ${emptyResult.overallScore}`
+            );
+
+            // All dark patterns
+            const allDark = [
+                { category: 'dark', type: 'hidden_costs' },
+                { category: 'dark', type: 'forced_continuity' },
+                { category: 'dark', type: 'roach_motel' }
+            ];
+            const darkResult = calculatePES(allDark);
+            addTestResult(
+                'Edge Cases',
+                'All dark patterns should result in low score',
+                darkResult.overallScore < 50,
+                `Score: ${darkResult.overallScore}`
+            );
+
+            // All white patterns
+            const allWhite = [
+                { category: 'white', type: 'clear_pricing' },
+                { category: 'white', type: 'easy_cancellation' },
+                { category: 'white', type: 'explicit_consent' }
+            ];
+            const whiteResult = calculatePES(allWhite);
+            addTestResult(
+                'Edge Cases',
+                'All white patterns should result in high score',
+                whiteResult.overallScore > 80,
+                `Score: ${whiteResult.overallScore}`
+            );
+        }
+
+        // Run all tests
+        function runAllTests() {
+            clearResults();
+            testScoringDimensions();
+            testPatternDefinitions();
+            testPESCalculation();
+            testCriticalFlags();
+            testScoreInterpretation();
+            testPSICalculation();
+            testDetectionRules();
+            testEdgeCases();
+            displayResults();
+        }
+
+        function runScoringTests() {
+            clearResults();
+            testScoringDimensions();
+            testPESCalculation();
+            testScoreInterpretation();
+            displayResults();
+        }
+
+        function runDetectionTests() {
+            clearResults();
+            testPatternDefinitions();
+            testDetectionRules();
+            testCriticalFlags();
+            displayResults();
+        }
+
+        function runPSITests() {
+            clearResults();
+            testPSICalculation();
+            displayResults();
+        }
+
+        // Auto-run on load
+        window.addEventListener('load', () => {
+            console.log('Test suite loaded. Click "Run All Tests" to begin.');
+        });
+    </script>
+</body>
+</html>
