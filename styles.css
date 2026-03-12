@@ -37,18 +37,26 @@ header h1 {
 .demo-warning {
     margin-top: 20px;
     padding: 12px 20px;
-    background: #fff7ed;
-    border: 1px solid #fed7aa;
+    background: #f0fdf4;
+    border: 1px solid #86efac;
     border-radius: 8px;
-    color: #92400e;
+    color: #166534;
     font-size: 0.9rem;
-    max-width: 600px;
+    max-width: 700px;
     margin-left: auto;
     margin-right: auto;
 }
 
 .demo-warning strong {
-    color: #f59e0b;
+    color: #15803d;
+}
+
+.demo-warning code {
+    background: #dcfce7;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: monospace;
+    font-size: 0.85rem;
 }
 
 .demo-warning a {

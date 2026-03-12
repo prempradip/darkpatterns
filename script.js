@@ -1,3 +1,6 @@
+// Configuration
+const API_BASE_URL = 'http://localhost:3000';
+
 // Tab switching
 const tabs = document.querySelectorAll('.tab');
 const tabContents = document.querySelectorAll('.tab-content');
@@ -25,70 +28,234 @@ fileInput.addEventListener('change', (e) => {
 });
 
 // URL form submission
-document.getElementById('url-form').addEventListener('submit', (e) => {
+document.getElementById('url-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const url = document.getElementById('url-input').value;
-    analyzeContent('url', url);
+    await analyzeContent('url', url);
 });
 
 // Image form submission
-document.getElementById('image-form').addEventListener('submit', (e) => {
+document.getElementById('image-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const file = fileInput.files[0];
     if (file) {
-        analyzeContent('image', file);
+        await analyzeContent('image', file);
     }
 });
 
-// Mock analysis function using PES system
-function analyzeContent(type, content) {
+// Real analysis function using backend API
+async function analyzeContent(type, content) {
     // Show loading state
     const results = document.getElementById('results');
     results.style.display = 'block';
+    results.innerHTML = '<div style="text-align: center; padding: 40px;"><h3>Analyzing...</h3><p>This may take 5-15 seconds</p></div>';
     results.scrollIntoView({ behavior: 'smooth' });
     
-    // Simulate analysis delay
-    setTimeout(() => {
-        // Detect patterns using the PES system
-        const detectedPatterns = detectPatterns(content, type);
+    try {
+        let detectedPatterns;
+        
+        if (type === 'url') {
+            // Analyze URL via backend
+            detectedPatterns = await analyzeURL(content);
+        } else {
+            // Analyze image via backend
+            detectedPatterns = await analyzeImage(content);
+        }
+        
+        // Calculate PES using detected patterns
         const pesResults = calculatePES(detectedPatterns);
         
-        const overallScore = pesResults.overallScore;
-        const darkScore = pesResults.darkPercentage;
-        const greyScore = pesResults.greyPercentage;
-        const whiteScore = pesResults.whitePercentage;
-        const interpretation = pesResults.interpretation;
+        displayResults(pesResults, detectedPatterns);
         
-        // Update UI
-        document.getElementById('dark-score').textContent = `${darkScore}%`;
-        document.getElementById('grey-score').textContent = `${greyScore}%`;
-        document.getElementById('white-score').textContent = `${whiteScore}%`;
-        document.getElementById('overall-score').textContent = overallScore;
-        document.getElementById('dark-bar').style.width = `${darkScore}%`;
-        document.getElementById('grey-bar').style.width = `${greyScore}%`;
-        document.getElementById('white-bar').style.width = `${whiteScore}%`;
+    } catch (error) {
+        console.error('Analysis error:', error);
+        results.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: #ef4444;">
+                <h3>❌ Analysis Failed</h3>
+                <p>${error.message}</p>
+                <p style="font-size: 0.9rem; color: #666; margin-top: 10px;">
+                    Make sure the backend server is running on ${API_BASE_URL}
+                </p>
+                <button onclick="location.reload()" style="margin-top: 20px; padding: 10px 20px; background: #1a1a1a; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                    Try Again
+                </button>
+            </div>
+        `;
+    }
+}
+
+// Analyze URL via backend API
+async function analyzeURL(url) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/analyze-url`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ url })
+        });
         
-        // Display score interpretation
-        displayScoreInterpretation(interpretation);
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Failed to analyze URL');
+        }
         
-        // Display dimension insights
-        displayDimensionInsights(pesResults);
+        const data = await response.json();
+        console.log('URL Analysis Result:', data);
         
-        // Generate insights, benchmark, and findings
-        const insight = generateInsight(overallScore, darkScore, greyScore, whiteScore);
-        displayInsight(insight);
+        return data.patterns || [];
         
-        displayBenchmark(overallScore, darkScore, greyScore, whiteScore);
+    } catch (error) {
+        if (error.message.includes('fetch')) {
+            throw new Error('Cannot connect to backend server. Please start the backend with: cd backend && npm start');
+        }
+        throw error;
+    }
+}
+
+// Analyze image via backend API
+async function analyzeImage(file) {
+    try {
+        const formData = new FormData();
+        formData.append('image', file);
         
-        displayRegulatoryRisk(darkScore, greyScore);
+        const response = await fetch(`${API_BASE_URL}/api/analyze-image`, {
+            method: 'POST',
+            body: formData
+        });
         
-        displayCompetitorComparison(overallScore);
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Failed to analyze image');
+        }
         
-        displayFixSuggestions(darkScore, greyScore, whiteScore, overallScore);
+        const data = await response.json();
+        console.log('Image Analysis Result:', data);
         
-        const findings = generateFindings(detectedPatterns, pesResults);
-        displayFindings(findings);
-    }, 1500);
+        return data.patterns || [];
+        
+    } catch (error) {
+        if (error.message.includes('fetch')) {
+            throw new Error('Cannot connect to backend server. Please start the backend with: cd backend && npm start');
+        }
+        throw error;
+    }
+}
+
+// Display results
+function displayResults(pesResults, detectedPatterns) {
+    const results = document.getElementById('results');
+    results.style.display = 'block';
+    results.innerHTML = ''; // Clear loading message
+    
+    // Restore the results HTML structure
+    results.innerHTML = `
+        <div class="overall-score">
+            <div class="score-number" id="overall-score">0</div>
+            <div class="score-label">Pattern Ethics Score (PES)</div>
+            <div class="score-interpretation" id="score-interpretation"></div>
+        </div>
+
+        <div class="score-breakdown">
+            <div class="breakdown-item">
+                <div class="breakdown-bar">
+                    <div class="breakdown-fill dark" id="dark-bar"></div>
+                </div>
+                <div class="breakdown-info">
+                    <span class="breakdown-label">⚫ Dark Patterns</span>
+                    <span class="breakdown-value" id="dark-score">0%</span>
+                </div>
+            </div>
+            <div class="breakdown-item">
+                <div class="breakdown-bar">
+                    <div class="breakdown-fill grey" id="grey-bar"></div>
+                </div>
+                <div class="breakdown-info">
+                    <span class="breakdown-label">🩶 Grey Patterns</span>
+                    <span class="breakdown-value" id="grey-score">0%</span>
+                </div>
+            </div>
+            <div class="breakdown-item">
+                <div class="breakdown-bar">
+                    <div class="breakdown-fill white" id="white-bar"></div>
+                </div>
+                <div class="breakdown-info">
+                    <span class="breakdown-label">⚪ White Patterns</span>
+                    <span class="breakdown-value" id="white-score">0%</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="insights" id="insights"></div>
+
+        <div class="dimension-insights">
+            <h3>Dimension Analysis</h3>
+            <p class="dimension-subtitle">Detailed breakdown across 6 scoring dimensions</p>
+            <div class="dimension-scores-grid" id="dimension-scores-grid"></div>
+            <div class="risk-areas" id="risk-areas"></div>
+        </div>
+
+        <div class="benchmark">
+            <h3>Industry Benchmark</h3>
+            <div class="benchmark-comparison" id="benchmark-comparison"></div>
+        </div>
+
+        <div class="regulatory-risk">
+            <h3>Regulatory Risk Assessment</h3>
+            <div class="risk-cards" id="risk-cards"></div>
+            <div class="risk-details" id="risk-details"></div>
+        </div>
+
+        <div class="competitor-comparison">
+            <h3>Competitor Ethics Comparison</h3>
+            <p class="competitor-subtitle">See how this design compares to similar platforms</p>
+            <div class="competitor-grid" id="competitor-grid"></div>
+        </div>
+
+        <div class="fix-suggestions">
+            <h3>Fix Suggestions</h3>
+            <p class="fix-subtitle">Actionable recommendations to improve your ethics score</p>
+            <div class="suggestions-list" id="suggestions-list"></div>
+        </div>
+
+        <div class="findings" id="findings"></div>
+    `;
+    
+    const overallScore = pesResults.overallScore;
+    const darkScore = pesResults.darkPercentage;
+    const greyScore = pesResults.greyPercentage;
+    const whiteScore = pesResults.whitePercentage;
+    const interpretation = pesResults.interpretation;
+    
+    // Update UI
+    document.getElementById('dark-score').textContent = `${darkScore}%`;
+    document.getElementById('grey-score').textContent = `${greyScore}%`;
+    document.getElementById('white-score').textContent = `${whiteScore}%`;
+    document.getElementById('overall-score').textContent = overallScore;
+    document.getElementById('dark-bar').style.width = `${darkScore}%`;
+    document.getElementById('grey-bar').style.width = `${greyScore}%`;
+    document.getElementById('white-bar').style.width = `${whiteScore}%`;
+    
+    // Display score interpretation
+    displayScoreInterpretation(interpretation);
+    
+    // Display dimension insights
+    displayDimensionInsights(pesResults);
+    
+    // Generate insights, benchmark, and findings
+    const insight = generateInsight(overallScore, darkScore, greyScore, whiteScore);
+    displayInsight(insight);
+    
+    displayBenchmark(overallScore, darkScore, greyScore, whiteScore);
+    
+    displayRegulatoryRisk(darkScore, greyScore);
+    
+    displayCompetitorComparison(overallScore);
+    
+    displayFixSuggestions(darkScore, greyScore, whiteScore, overallScore);
+    
+    const findings = generateFindings(detectedPatterns, pesResults);
+    displayFindings(findings);
 }
 
 function displayScoreInterpretation(interpretation) {
