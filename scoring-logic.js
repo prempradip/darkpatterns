@@ -485,9 +485,17 @@ function calculatePES(detectedPatterns) {
     // Process detected patterns and calculate dimension scores
     detectedPatterns.forEach(pattern => {
         const category = pattern.category;
-        const patternDef = PATTERN_DEFINITIONS[category][pattern.type];
+        const patternType = pattern.type;
         
-        if (!patternDef) return;
+        // Debug logging
+        console.log('Processing pattern:', { category, type: patternType });
+        
+        const patternDef = PATTERN_DEFINITIONS[category]?.[patternType];
+        
+        if (!patternDef) {
+            console.warn(`Pattern definition not found for: ${category}.${patternType}`);
+            return;
+        }
         
         // Count patterns by category
         if (category === PATTERN_CATEGORIES.DARK) darkCount++;
@@ -501,7 +509,7 @@ function calculatePES(detectedPatterns) {
             if (dimensionScores[dimKey]) {
                 dimensionScores[dimKey].ratings.push(rating);
                 dimensionScores[dimKey].patterns.push({
-                    type: pattern.type,
+                    type: patternType,
                     category: category,
                     rating: rating,
                     description: patternDef.description
