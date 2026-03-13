@@ -1,7 +1,7 @@
 // Configuration - automatically detects environment
 const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:3000'
-    : 'https://your-backend-url.com'; // TODO: Replace with actual production backend URL
+    : 'https://darkpattern-detector-api.onrender.com';
 
 // Tab switching
 const tabs = document.querySelectorAll('.tab');
