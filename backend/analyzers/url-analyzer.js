@@ -5,23 +5,44 @@ class URLAnalyzer {
         let browser;
         
         try {
-            // Launch browser
+            // Launch browser with optimized settings for Render
             browser = await puppeteer.launch({
                 headless: 'new',
-                args: ['--no-sandbox', '--disable-setuid-sandbox']
+                args: [
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-dev-shm-usage',
+                    '--disable-accelerated-2d-canvas',
+                    '--no-first-run',
+                    '--no-zygote',
+                    '--disable-gpu'
+                ]
             });
             
             const page = await browser.newPage();
             
             // Set viewport and user agent
-            await page.setViewport({ width: 1920, height: 1080 });
+            await page.setViewport({ width: 1280, height: 720 });
             await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
             
-            // Navigate to URL with timeout
-            await page.goto(url, { 
-                waitUntil: 'networkidle2',
-                timeout: 30000 
+            // Block unnecessary resources to speed up loading
+            await page.setRequestInterception(true);
+            page.on('request', (req) => {
+                if(['image', 'stylesheet', 'font', 'media'].includes(req.resourceType())){
+                    req.abort();
+                } else {
+                    req.continue();
+                }
             });
+            
+            // Navigate to URL with longer timeout and less strict wait condition
+            await page.goto(url, { 
+                waitUntil: 'domcontentloaded',
+                timeout: 60000 
+            });
+            
+            // Wait a bit for dynamic content
+            await page.waitForTimeout(2000);
             
             // Detect patterns
             const patterns = [];
