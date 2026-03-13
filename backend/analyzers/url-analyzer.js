@@ -35,14 +35,23 @@ class URLAnalyzer {
                 }
             });
             
-            // Navigate to URL with longer timeout and less strict wait condition
-            await page.goto(url, { 
-                waitUntil: 'domcontentloaded',
-                timeout: 60000 
-            });
+            // Navigate to URL with multiple fallback strategies
+            try {
+                await page.goto(url, { 
+                    waitUntil: 'domcontentloaded',
+                    timeout: 45000 
+                });
+            } catch (navError) {
+                // Fallback: try with even simpler wait condition
+                console.log('First navigation failed, trying fallback...');
+                await page.goto(url, { 
+                    waitUntil: 'load',
+                    timeout: 30000 
+                });
+            }
             
             // Wait a bit for dynamic content
-            await page.waitForTimeout(2000);
+            await new Promise(resolve => setTimeout(resolve, 1500));
             
             // Detect patterns
             const patterns = [];

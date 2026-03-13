@@ -44,7 +44,18 @@ app.get('/health', (req, res) => {
     res.json({ 
         status: 'ok', 
         message: 'Dark Pattern Detector API is running',
-        version: '1.0.0'
+        version: '1.0.0',
+        note: 'URL analysis may be slow on free tier. Image analysis is faster and more reliable.'
+    });
+});
+
+// Quick test endpoint (no Puppeteer)
+app.get('/api/test', (req, res) => {
+    res.json({
+        success: true,
+        message: 'API is working!',
+        timestamp: new Date().toISOString(),
+        tip: 'For best results on free hosting, use image upload instead of URL analysis'
     });
 });
 
@@ -72,8 +83,14 @@ app.post('/api/analyze-url', async (req, res) => {
 
         console.log(`Analyzing URL: ${url}`);
         
-        // Analyze the URL
-        const result = await urlAnalyzer.analyzeURL(url);
+        // Set a timeout for the entire analysis
+        const analysisPromise = urlAnalyzer.analyzeURL(url);
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Analysis timeout - website took too long to load. Try a simpler website or try again later.')), 70000)
+        );
+        
+        // Race between analysis and timeout
+        const result = await Promise.race([analysisPromise, timeoutPromise]);
         
         res.json({
             success: true,
@@ -84,9 +101,17 @@ app.post('/api/analyze-url', async (req, res) => {
         
     } catch (error) {
         console.error('URL analysis error:', error);
+        
+        // Provide helpful error messages
+        let userMessage = error.message;
+        if (error.message.includes('timeout') || error.message.includes('Navigation timeout')) {
+            userMessage = 'The website took too long to load. This can happen with complex sites on free hosting. Try: 1) A simpler website (e.g., example.com), 2) Wait a minute and try again, or 3) Use image upload instead.';
+        }
+        
         res.status(500).json({ 
             error: 'Analysis failed',
-            message: error.message,
+            message: userMessage,
+            suggestion: 'Try analyzing a simpler website or upload a screenshot instead',
             details: process.env.NODE_ENV === 'development' ? error.stack : undefined
         });
     }
